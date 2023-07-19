@@ -69,17 +69,3 @@ router.patch("/:id", jwtAuth, async (req, res, next) => {
   }
 });
 
-//delete a comment
-router.delete("/:id", jwtAuth, async (req, res, next) => {
-  try {
-    //find comment
-    const comment = await Comment.findById(req.params.id);
-    //if comment not found
-    if (!comment) {
-      //throw error
-      throw new Error("Comment not found");
-    }
-    //delete comment
-    await comment.remove();
-    //return message
-    return
