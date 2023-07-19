@@ -1,71 +1,42 @@
 //create web server
-const express = require("express");
-const router = express.Router();
-//import model for comments
-const Comment = require("../models/comment");
-//import middleware
-const { jwtAuth } = require("../middleware/auth");
-//import error handler
-const { errorHandler } = require("../middleware/error");
-//import mongoose
-const mongoose = require("mongoose");
-//import model for users
-const User = require("../models/user");
+// 1. load modules
+var express = require('express');
+var bodyParser = require('body-parser');
+var mongoose = require('mongoose');
 
-//get all comments
-router.get("/", jwtAuth, async (req, res, next) => {
-  try {
-    //get all comments
-    const comments = await Comment.find();
-    //return comments
-    return res.json(comments);
-  } catch (err) {
-    return next(err);
-  }
+// 2. create instance of express
+var app = express();
+
+// 3. set up middleware
+app.use(express.static(__dirname + '/public'));
+app.use(bodyParser.json());
+
+// 4. connect to the database
+mongoose.connect('mongodb://localhost/myDB');
+
+// 5. define model
+var Comment = mongoose.model('Comment', {
+    username: String,
+    comment: String
 });
 
-//get all comments for a post
-router.get("/:postId", jwtAuth, async (req, res, next) => {
-  try {
-    //get all comments for a post
-    const comments = await Comment.find({ postId: req.params.postId });
-    //return comments
-    return res.json(comments);
-  } catch (err) {
-    return next(err);
-  }
+// 6. define routes
+// GET /comments
+app.get('/comments', function(req, res) {
+    Comment.find(function(err, comments) {
+        res.json(comments);
+    });
 });
 
-//add a comment
-router.post("/", jwtAuth, async (req, res, next) => {
-  try {
-    //create comment
-    const comment = await Comment.create(req.body);
-    //return comment
-    return res.json(comment);
-  } catch (err) {
-    return next(err);
-  }
+// POST /comments
+app.post('/comments', function(req, res) {
+    var comment = new Comment(req.body);
+    comment.save(function(err, comment) {
+        res.json(comment);
+    });
 });
 
-//update a comment
-router.patch("/:id", jwtAuth, async (req, res, next) => {
-  try {
-    //find comment
-    const comment = await Comment.findById(req.params.id);
-    //if comment not found
-    if (!comment) {
-      //throw error
-      throw new Error("Comment not found");
-    }
-    //update comment
-    comment.set(req.body);
-    //save comment
-    await comment.save();
-    //return updated comment
-    return res.json(comment);
-  } catch (err) {
-    return next(err);
-  }
-});
+// 7. start server
+app.listen(3000);
+console.log('Server running at http://localhost:3000/');
 
