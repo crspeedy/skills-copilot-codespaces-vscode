@@ -1,42 +1,58 @@
-//create web server
-// 1. load modules
-var express = require('express');
-var bodyParser = require('body-parser');
-var mongoose = require('mongoose');
+// Create web server
+const express = require('express');
+const bodyParser = require('body-parser');
+const cors = require('cors');
+const { randomBytes } = require('crypto');
 
-// 2. create instance of express
-var app = express();
+// Create express app
+const app = express();
 
-// 3. set up middleware
-app.use(express.static(__dirname + '/public'));
+// Use middleware
 app.use(bodyParser.json());
+app.use(cors());
 
-// 4. connect to the database
-mongoose.connect('mongodb://localhost/myDB');
+// Create comments object
+const commentsByPostId = {};
 
-// 5. define model
-var Comment = mongoose.model('Comment', {
-    username: String,
-    comment: String
+// Get comments by post id
+app.get('/posts/:id/comments', (req, res) => {
+  res.send(commentsByPostId[req.params.id] || []);
 });
 
-// 6. define routes
-// GET /comments
-app.get('/comments', function(req, res) {
-    Comment.find(function(err, comments) {
-        res.json(comments);
-    });
+// Create comment by post id
+app.post('/posts/:id/comments', (req, res) => {
+  // Create random id
+  const commentId = randomBytes(4).toString('hex');
+
+  // Get comment content
+  const { content } = req.body;
+
+  // Get post id
+  const postId = req.params.id;
+
+  // Get comments by post id
+  const comments = commentsByPostId[postId] || [];
+
+  // Create comment
+  const comment = {
+    id: commentId,
+    content,
+    status: 'pending',
+  };
+
+  // Add comment to comments
+  comments.push(comment);
+
+  // Add comments to commentsByPostId
+  commentsByPostId[postId] = comments;
+
+  // Send comment to client
+  res.status(201).send(comments);
 });
 
-// POST /comments
-app.post('/comments', function(req, res) {
-    var comment = new Comment(req.body);
-    comment.save(function(err, comment) {
-        res.json(comment);
-    });
+// Listen to port 4001
+app.listen(4001, () => {
+  console.log('Listening on 4001');
 });
 
-// 7. start server
-app.listen(3000);
-console.log('Server running at http://localhost:3000/');
 
